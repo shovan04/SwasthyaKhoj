@@ -1,3 +1,4 @@
+
 // @ts-nocheck
 'use client';
 
@@ -49,7 +50,7 @@ const Header = () => {
               description: `Your location has been updated to: ${locationStr.substring(0, 100)}${locationStr.length > 100 ? '...' : ''}`,
             });
           } catch (apiError: any) {
-            console.warn("Error fetching address:", apiError.name === 'AbortError' ? 'Nominatim API request timed out' : apiError); // Changed to warn
+            console.warn("Error fetching address:", apiError.name === 'AbortError' ? 'Nominatim API request timed out' : apiError.message, apiError);
             const fallbackLocationStr = `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`;
             setCurrentLocationDisplay(fallbackLocationStr);
             
@@ -70,7 +71,6 @@ const Header = () => {
           }
         },
         (error: GeolocationPositionError) => {
-          // Changed from console.error to console.warn as it's a handled error condition
           console.warn(`Geolocation API error (handled): Code ${error.code} - ${error.message}`, error);
           let friendlyError = "Could not get location. Please ensure location services are enabled and permissions are granted.";
           switch(error.code) {
@@ -78,16 +78,15 @@ const Header = () => {
               friendlyError = "Location permission denied. Please enable it in your browser settings.";
               break;
             case error.POSITION_UNAVAILABLE:
-              friendlyError = "Location information is unavailable.";
+              friendlyError = "Location information is unavailable. Please check your device's location services, network/GPS signal, and try again.";
               break;
             case error.TIMEOUT:
-              friendlyError = "The request to get user location timed out.";
+              friendlyError = "The request to get user location timed out. Please try again.";
               break;
             default:
-              friendlyError = "An unknown error occurred while trying to get your location.";
+              friendlyError = "An unknown error occurred while trying to get your location. Please try again.";
           }
           setLocationError(friendlyError);
-          // Update display to show the specific friendly error
           setCurrentLocationDisplay(friendlyError); 
           setIsDetectingLocation(false);
           toast({
@@ -101,7 +100,7 @@ const Header = () => {
     } else {
       const errorMsg = "Geolocation is not supported by this browser.";
       setLocationError(errorMsg);
-      setCurrentLocationDisplay("Geolocation not supported"); // Or errorMsg
+      setCurrentLocationDisplay("Geolocation not supported");
       setIsDetectingLocation(false);
       toast({
         title: "Unsupported Feature",
@@ -115,7 +114,6 @@ const Header = () => {
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-card shadow-md">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
-          {/* Location display/trigger on the left */}
           <div
             className="flex items-center space-x-2 cursor-pointer hover:bg-secondary/30 p-2 rounded-md transition-colors"
             onClick={() => setIsLocationDialogOpen(true)}
@@ -134,7 +132,7 @@ const Header = () => {
               <p 
                 className={cn(
                   "font-semibold text-sm truncate",
-                  (currentLocationDisplay === 'Set your location' || locationError || currentLocationDisplay === "Location information is unavailable." || currentLocationDisplay === "Geolocation not supported" || currentLocationDisplay === "Location permission denied. Please enable it in your browser settings." || currentLocationDisplay === "The request to get user location timed out.") ? "text-destructive" : "text-primary"
+                  (currentLocationDisplay === 'Set your location' || locationError || currentLocationDisplay === "Location information is unavailable. Please check your device's location services, network/GPS signal, and try again." || currentLocationDisplay === "Geolocation not supported" || currentLocationDisplay === "Location permission denied. Please enable it in your browser settings." || currentLocationDisplay === "The request to get user location timed out. Please try again." || currentLocationDisplay === "An unknown error occurred while trying to get your location. Please try again.") ? "text-destructive" : "text-primary"
                 )}
                 style={{maxWidth: 'calc(100vw - 200px)'}} 
               >
@@ -143,7 +141,6 @@ const Header = () => {
             </div>
           </div>
 
-          {/* App title on the right */}
           <Link href="/" className="flex items-center text-xl font-semibold text-primary hover:text-primary/90 transition-colors ml-auto shrink-0 text-right">
             <span className="hidden sm:inline">SwasthyaKhoj</span>
             <span className="sm:hidden">SK</span>
@@ -164,4 +161,3 @@ const Header = () => {
 };
 
 export default Header;
-
