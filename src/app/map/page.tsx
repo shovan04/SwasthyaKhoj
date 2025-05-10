@@ -1,80 +1,31 @@
 import InfoCard from '@/components/shared/InfoCard';
-import type { MedicalFacility, Doctor } from '@/types';
-
-const mockDoctors: Doctor[] = [
-  { id: 'doc1', name: 'Dr. Priya Sharma', specialty: 'General Physician', timings: 'Mon-Fri: 9 AM - 1 PM, 3 PM - 6 PM' },
-  { id: 'doc2', name: 'Dr. Rahul Verma', specialty: 'Pediatrician', timings: 'Tue, Thu, Sat: 10 AM - 4 PM' },
-  { id: 'doc3', name: 'Dr. Anjali Singh', specialty: 'Gynecologist', timings: 'Mon, Wed, Fri: 11 AM - 5 PM' },
-];
-
-const mockFacilities: MedicalFacility[] = [
-  {
-    id: '1',
-    type: 'hospital',
-    name: 'Community Health Center',
-    address: '123 Village Road, Rural District, State',
-    phone: '+91-123-4567890',
-    imageUrl: 'https://picsum.photos/400/200?random=1',
-    latitude: 28.6139, 
-    longitude: 77.2090,
-    services: ['General Checkup', 'Emergency Care', 'Maternity Ward', 'Minor Procedures'],
-    doctors: [mockDoctors[0], mockDoctors[1]],
-    appointmentBookingInfo: 'Call +91-123-4567890 during working hours. Walk-ins accepted for emergencies.',
-  },
-  {
-    id: '2',
-    type: 'store',
-    name: 'Asha Medical Store',
-    address: '45 Market Square, Near Bus Stand, Rural Town',
-    phone: '+91-987-6543210',
-    imageUrl: 'https://picsum.photos/400/200?random=2',
-    latitude: 28.6150,
-    longitude: 77.2100,
-    operatingHours: '9 AM - 8 PM Daily',
-  },
-  {
-    id: '3',
-    type: 'hospital',
-    name: 'District General Hospital',
-    address: '789 Highway Connect, Rural District, State',
-    phone: '+91-111-2223330',
-    imageUrl: 'https://picsum.photos/400/200?random=3',
-    latitude: 28.6100,
-    longitude: 77.2000,
-    services: ['Surgery', 'Pediatrics', 'OPD', 'Cardiology', 'Ortho'],
-    doctors: [mockDoctors[0], mockDoctors[1], mockDoctors[2]],
-    appointmentBookingInfo: 'Appointments preferred. Call +91-111-2223330 or visit our reception. Online booking coming soon.',
-  },
-  {
-    id: '4',
-    type: 'store',
-    name: 'Suraksha Pharmacy',
-    address: 'Main Street, Rural Village, State',
-    phone: '+91-555-6667770',
-    imageUrl: 'https://picsum.photos/400/200?random=4',
-    latitude: 28.6000,
-    longitude: 77.1900,
-    operatingHours: '8 AM - 9 PM, Sunday Closed',
-  },
-];
+import { getAllFacilities } from '@/lib/data'; // Updated import
+import type { MedicalFacility } from '@/types';
 
 export default function MapPage() {
+  const facilities: MedicalFacility[] = getAllFacilities();
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-4">
       <section>
         <h2 className="text-2xl font-semibold mb-4 text-primary">Nearby Medical Facilities</h2>
         <div className="bg-muted rounded-lg p-6 h-64 flex items-center justify-center text-muted-foreground shadow-inner">
-          <p className="text-lg">Interactive map will be displayed here.</p>
+          {/* Placeholder for future interactive map */}
+          <p className="text-lg text-center">Interactive map feature is under development. <br/>Please use the list below to find facilities.</p>
         </div>
       </section>
 
       <section>
         <h3 className="text-xl font-semibold mb-4 text-foreground">Facilities List</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {mockFacilities.map((facility) => (
-            <InfoCard key={facility.id} facility={facility} />
-          ))}
-        </div>
+        {facilities.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {facilities.map((facility) => (
+              <InfoCard key={facility.id} facility={facility} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-center py-4">No medical facilities found.</p>
+        )}
       </section>
     </div>
   );

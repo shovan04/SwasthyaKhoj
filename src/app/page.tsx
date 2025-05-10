@@ -3,53 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Search, Hospital, Store, Users, Star, Phone, Compass, CalendarDays } from 'lucide-react';
+import { MapPin, Search, Hospital, Store, Users, Star, Compass } from 'lucide-react';
 import type { MedicalFacility } from '@/types';
-
-// Mock data for facilities, moved here and updated with distance
-const mockFacilities: MedicalFacility[] = [
-  {
-    id: '1',
-    type: 'hospital',
-    name: 'Apollo Hospital',
-    address: 'Bidhannagar, Kolkata - 700091',
-    phone: '+91-123-4567890',
-    imageUrl: 'https://picsum.photos/400/200?random=1',
-    distance: '1.2 km away',
-    services: ['General Checkup', 'Emergency Care', 'Maternity Ward'],
-  },
-  {
-    id: '2',
-    type: 'store',
-    name: 'Asha Medical Store',
-    address: 'Market Square, Rural Town',
-    phone: '+91-987-6543210',
-    imageUrl: 'https://picsum.photos/400/200?random=2',
-    distance: '0.8 km away',
-    operatingHours: '9 AM - 8 PM Daily',
-  },
-  {
-    id: '3',
-    type: 'hospital',
-    name: 'Woodlands Hospital',
-    address: 'Alipur, Kolkata - 700027',
-    phone: '+91-111-2223330',
-    imageUrl: 'https://picsum.photos/400/200?random=3',
-    distance: '2.5 km away',
-    services: ['Surgery', 'Pediatrics', 'OPD'],
-  },
-  {
-    id: '4',
-    type: 'store',
-    name: 'Suraksha Pharmacy',
-    address: 'Main Street, Rural Village',
-    phone: '+91-555-6667770',
-    imageUrl: 'https://picsum.photos/400/200?random=4',
-    distance: '3.1 km away',
-    operatingHours: '8 AM - 9 PM, Sunday Closed',
-  },
-];
-
+import { getAllFacilities } from '@/lib/data'; // Import consolidated data
 
 interface QuickActionCardProps {
   title: string;
@@ -77,32 +33,37 @@ interface NearbyFacilityItemProps {
 }
 
 const NearbyFacilityItem: React.FC<NearbyFacilityItemProps> = ({ facility }) => (
-  <Card className="p-4 bg-card mb-3">
-    <div className="flex items-center justify-between">
-      <div>
-        <h3 className="font-semibold text-md text-foreground">{facility.name}</h3>
-        {facility.distance && <p className="text-sm text-muted-foreground">{facility.distance}</p>}
-        <p className="text-xs text-muted-foreground">{facility.address}</p>
-      </div>
-      <Button variant="primary" size="icon" className="rounded-full shrink-0" asChild>
-        <a href={`tel:${facility.phone}`}>
-          <Phone className="h-5 w-5" />
-        </a>
-      </Button>
-    </div>
-  </Card>
+  <Link href={`/facility/${facility.id}`} passHref legacyBehavior>
+    <a className="block hover:no-underline group">
+      <Card className="p-4 bg-card mb-3 group-hover:shadow-md transition-shadow duration-200">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 overflow-hidden">
+            <h3 className="font-semibold text-md text-foreground truncate">{facility.name}</h3>
+            {facility.distance && <p className="text-sm text-muted-foreground">{facility.distance}</p>}
+            <p className="text-xs text-muted-foreground truncate">{facility.address}</p>
+          </div>
+          <Compass className="h-6 w-6 text-primary ml-2 shrink-0 group-hover:animate-pulse" />
+        </div>
+      </Card>
+    </a>
+  </Link>
 );
 
 export default function HomePage() {
   const quickActions = [
-    { title: 'Find Hospitals', href: '/map', icon: <Hospital className="h-6 w-6 text-primary" /> },
+    { title: 'Find Hospitals', href: '/map?type=hospital', icon: <Hospital className="h-6 w-6 text-primary" /> },
     { title: 'Medical Stores', href: '/map?type=store', icon: <Store className="h-6 w-6 text-primary" /> },
     { title: 'Find Doctors', href: '/appointments', icon: <Users className="h-6 w-6 text-primary" /> },
     { title: 'Emergency', href: '#!', icon: <Star className="h-6 w-6 text-primary" /> }, // Placeholder for emergency
   ];
 
-  const hospitals = mockFacilities.filter(f => f.type === 'hospital');
-  const stores = mockFacilities.filter(f => f.type === 'store');
+  const allFacilities = getAllFacilities();
+  // For homepage, let's take a few examples, or filter by distance if that logic existed
+  const homePageFacilities = allFacilities.slice(0, 4);
+
+
+  const hospitals = homePageFacilities.filter(f => f.type === 'hospital');
+  const stores = homePageFacilities.filter(f => f.type === 'store');
 
   return (
     <div className="space-y-6 p-4">
@@ -111,7 +72,7 @@ export default function HomePage() {
         <MapPin className="h-5 w-5 text-primary" />
         <div>
           <p className="text-xs text-muted-foreground">Your current location</p>
-          <p className="font-semibold text-foreground">Kolkata, West Bengal</p>
+          <p className="font-semibold text-foreground">Kolkata, West Bengal</p> {/* Mock location */}
         </div>
       </section>
 
@@ -121,7 +82,7 @@ export default function HomePage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search doctors or hospitals"
+            placeholder="Search doctors, hospitals, stores..."
             className="pl-10 h-12 bg-card border-0 focus-visible:ring-primary"
           />
         </div>
@@ -145,13 +106,13 @@ export default function HomePage() {
 
         <Tabs defaultValue="hospitals" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-card p-1 h-auto">
-            <TabsTrigger 
-              value="hospitals" 
+            <TabsTrigger
+              value="hospitals"
               className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-card data-[state=inactive]:text-muted-foreground py-2.5"
             >
               Hospitals
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="stores"
               className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-card data-[state=inactive]:text-muted-foreground py-2.5"
             >
