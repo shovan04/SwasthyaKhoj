@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Search, Hospital, Store, Users, Star, Compass, Loader2 } from 'lucide-react';
-import type { MedicalFacility } from '@/types';
+import { MapPin, Search, Hospital, Store, Users, Star, Compass, Loader2, Clock } from 'lucide-react';
+import type { MedicalFacility, Doctor } from '@/types';
 import { getAllFacilities } from '@/lib/data';
 import React, { useState, useEffect } from 'react';
-import LocationDialog from '@/components/shared/LocationDialog';
-import { useToast } from "@/hooks/use-toast";
-
+// LocationDialog is no longer imported or used here
+// useToast might not be needed if all toasts related to location are in Header
+// const { toast } = useToast(); // Potentially remove if not used for other purposes
 
 interface QuickActionCardProps {
   title: string;
@@ -51,116 +51,52 @@ const NearbyFacilityItem: React.FC<NearbyFacilityItemProps> = ({ facility }) => 
           </div>
           <Compass className="h-6 w-6 text-primary ml-2 shrink-0 group-hover:animate-pulse" />
         </div>
+         {facility.type === 'hospital' && facility.doctors && facility.doctors.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-border/50">
+            <h4 className="text-xs font-semibold text-muted-foreground mb-1">Available Doctors:</h4>
+            {facility.doctors.slice(0, 1).map((doctor: Doctor) => ( // Show only first doctor for brevity
+              <div key={doctor.id} className="text-xs">
+                <p className="font-medium text-foreground truncate">{doctor.name} ({doctor.specialty})</p>
+                <div className="flex items-center text-muted-foreground">
+                  <Clock className="h-3 w-3 mr-1" />
+                  <span className="truncate">{doctor.timings}</span>
+                </div>
+              </div>
+            ))}
+            {facility.doctors.length > 1 && <p className="text-xs text-primary mt-1">View all doctors...</p>}
+          </div>
+        )}
       </Card>
     </a>
   </Link>
 );
 
 export default function HomePage() {
-  const { toast } = useToast();
-  const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
-  const [currentLocationDisplay, setCurrentLocationDisplay] = useState('Set your location'); // Initial mock location
-  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  // Removed location-related state and functions:
+  // const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
+  // const [currentLocationDisplay, setCurrentLocationDisplay] = useState('Set your location');
+  // const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  // const [locationError, setLocationError] = useState<string | null>(null);
+  // const handleDetectLocation = async () => { ... };
 
   const quickActions = [
     { title: 'Find Hospitals', href: '/map?type=hospital', icon: <Hospital className="h-6 w-6 text-primary" /> },
     { title: 'Medical Stores', href: '/map?type=store', icon: <Store className="h-6 w-6 text-primary" /> },
     { title: 'Find Doctors', href: '/appointments', icon: <Users className="h-6 w-6 text-primary" /> },
-    { title: 'Emergency', href: '#!', icon: <Star className="h-6 w-6 text-primary" /> }, // Placeholder for emergency
+    { title: 'Emergency', href: '#!', icon: <Star className="h-6 w-6 text-primary" /> }, 
   ];
 
   const allFacilities = getAllFacilities();
-  const homePageFacilities = allFacilities.slice(0, 4);
+  // Add some randomization or better logic for "nearby" if actual location is available via Header
+  const homePageFacilities = allFacilities.sort(() => 0.5 - Math.random()).slice(0, 4); 
   const hospitals = homePageFacilities.filter(f => f.type === 'hospital');
   const stores = homePageFacilities.filter(f => f.type === 'store');
-
-  const handleDetectLocation = async () => {
-    setIsDetectingLocation(true);
-    setLocationError(null);
-    setCurrentLocationDisplay("Detecting GPS...");
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          setCurrentLocationDisplay("Fetching address...");
-
-          try {
-            // Reverse geocoding using OpenStreetMap Nominatim API
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-            if (!response.ok) {
-              throw new Error(`Nominatim API error: ${response.status}`);
-            }
-            const data = await response.json();
-            
-            const locationStr = data.display_name || `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`;
-            setCurrentLocationDisplay(locationStr);
-            toast({
-              title: "Location Detected",
-              description: `Your location has been updated to: ${locationStr}`,
-            });
-          } catch (apiError) {
-            console.error("Error fetching address:", apiError);
-            const fallbackLocationStr = `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`;
-            setCurrentLocationDisplay(fallbackLocationStr);
-            setLocationError("Could not fetch address. Showing coordinates.");
-            toast({
-              title: "Address Fetch Error",
-              description: `Could not get address details. Using coordinates: ${fallbackLocationStr}`,
-              variant: "destructive",
-            });
-          } finally {
-            setIsDetectingLocation(false);
-            setIsLocationDialogOpen(false); // Close dialog on success or address fetch error
-          }
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          const friendlyError = "Could not get location. Please ensure location services are enabled and permissions are granted.";
-          setLocationError(friendlyError);
-          setCurrentLocationDisplay("Could not fetch GPS location");
-          setIsDetectingLocation(false);
-          toast({
-            title: "Location Error",
-            description: friendlyError,
-            variant: "destructive",
-          });
-        },
-        { timeout: 10000 } // Add a timeout for geolocation
-      );
-    } else {
-      const errorMsg = "Geolocation is not supported by this browser.";
-      setLocationError(errorMsg);
-      setCurrentLocationDisplay("Geolocation not supported");
-      setIsDetectingLocation(false);
-      toast({
-        title: "Unsupported Feature",
-        description: errorMsg,
-        variant: "destructive",
-      });
-    }
-  };
 
 
   return (
     <div className="space-y-6 p-4">
-      {/* Location Section */}
-      <section
-        className="flex items-center space-x-2 cursor-pointer hover:bg-card p-2 rounded-md transition-colors"
-        onClick={() => setIsLocationDialogOpen(true)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsLocationDialogOpen(true);}}
-        aria-label="Set your current location"
-      >
-        <MapPin className="h-5 w-5 text-primary" />
-        <div>
-          <p className="text-xs text-muted-foreground">Your current location</p>
-          <p className="font-semibold text-foreground">{currentLocationDisplay}</p>
-        </div>
-      </section>
-
+      {/* Location Section Removed - Now in Header */}
+      
       {/* Search Bar Section */}
       <section>
         <div className="relative">
@@ -225,14 +161,7 @@ export default function HomePage() {
         </Tabs>
       </section>
 
-      <LocationDialog
-        isOpen={isLocationDialogOpen}
-        onOpenChange={setIsLocationDialogOpen}
-        onDetectLocation={handleDetectLocation}
-        currentLocationText={currentLocationDisplay}
-        isDetecting={isDetectingLocation}
-        detectionError={locationError}
-      />
+      {/* LocationDialog instance Removed - Now in Header */}
     </div>
   );
 }
