@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import Header from '@/components/layout/Header';
+// import Header from '@/components/layout/Header'; // Header removed
 import BottomNav from '@/components/layout/BottomNav';
 import { Toaster } from "@/components/ui/toaster";
 
@@ -29,8 +29,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <div className="flex flex-col min-h-screen bg-background">
-          <Header />
-          <main className="flex-grow container mx-auto px-4 pt-6 pb-20 md:pb-8"> {/* More padding bottom for bottom nav */}
+          {/* <Header /> Removed Header */}
+          <main className="flex-grow pb-20 md:pb-6"> {/* Adjusted padding */}
             {children}
           </main>
           <BottomNav />

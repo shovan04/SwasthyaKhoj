@@ -18,4 +18,5 @@ export interface MedicalFacility {
   operatingHours?: string; // For stores
   doctors?: Doctor[]; // For hospitals
   appointmentBookingInfo?: string; // For hospitals, e.g., "Call 123-456 or visit website.com/appointments"
+  distance?: string; // e.g., "1.2 km away"
 }
