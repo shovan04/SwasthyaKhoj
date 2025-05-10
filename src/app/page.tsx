@@ -10,9 +10,6 @@ import { MapPin, Search, Hospital, Store, Users, Star, Compass, Loader2, Clock }
 import type { MedicalFacility, Doctor } from '@/types';
 import { getAllFacilities } from '@/lib/data';
 import React, { useState, useEffect } from 'react';
-// LocationDialog is no longer imported or used here
-// useToast might not be needed if all toasts related to location are in Header
-// const { toast } = useToast(); // Potentially remove if not used for other purposes
 
 interface QuickActionCardProps {
   title: string;
@@ -72,12 +69,19 @@ const NearbyFacilityItem: React.FC<NearbyFacilityItemProps> = ({ facility }) => 
 );
 
 export default function HomePage() {
-  // Removed location-related state and functions:
-  // const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
-  // const [currentLocationDisplay, setCurrentLocationDisplay] = useState('Set your location');
-  // const [isDetectingLocation, setIsDetectingLocation] = useState(false);
-  // const [locationError, setLocationError] = useState<string | null>(null);
-  // const handleDetectLocation = async () => { ... };
+  const [homePageFacilities, setHomePageFacilities] = useState<MedicalFacility[]>([]);
+  const [hospitals, setHospitals] = useState<MedicalFacility[]>([]);
+  const [stores, setStores] = useState<MedicalFacility[]>([]);
+
+  useEffect(() => {
+    const allFacilities = getAllFacilities();
+    // Perform randomization on client-side to avoid hydration mismatch
+    const randomizedFacilities = [...allFacilities].sort(() => 0.5 - Math.random()).slice(0, 4);
+    setHomePageFacilities(randomizedFacilities);
+    setHospitals(randomizedFacilities.filter(f => f.type === 'hospital'));
+    setStores(randomizedFacilities.filter(f => f.type === 'store'));
+  }, []);
+
 
   const quickActions = [
     { title: 'Find Hospitals', href: '/map?type=hospital', icon: <Hospital className="h-6 w-6 text-primary" /> },
@@ -85,14 +89,7 @@ export default function HomePage() {
     { title: 'Find Doctors', href: '/appointments', icon: <Users className="h-6 w-6 text-primary" /> },
     { title: 'Emergency', href: '#!', icon: <Star className="h-6 w-6 text-primary" /> }, 
   ];
-
-  const allFacilities = getAllFacilities();
-  // Add some randomization or better logic for "nearby" if actual location is available via Header
-  const homePageFacilities = allFacilities.sort(() => 0.5 - Math.random()).slice(0, 4); 
-  const hospitals = homePageFacilities.filter(f => f.type === 'hospital');
-  const stores = homePageFacilities.filter(f => f.type === 'store');
-
-
+  
   return (
     <div className="space-y-6 p-4">
       {/* Location Section Removed - Now in Header */}
@@ -146,6 +143,7 @@ export default function HomePage() {
                 <NearbyFacilityItem key={facility.id} facility={facility} />
               ))
             ) : (
+              homePageFacilities.length === 0 ? <Loader2 className="mx-auto my-4 h-8 w-8 animate-spin text-primary" /> :
               <p className="text-muted-foreground text-center py-4">No hospitals found nearby.</p>
             )}
           </TabsContent>
@@ -155,6 +153,7 @@ export default function HomePage() {
                 <NearbyFacilityItem key={facility.id} facility={facility} />
               ))
             ) : (
+              homePageFacilities.length === 0 && hospitals.length === 0 ? <Loader2 className="mx-auto my-4 h-8 w-8 animate-spin text-primary" /> : // Show loader if initial load
               <p className="text-muted-foreground text-center py-4">No medical stores found nearby.</p>
             )}
           </TabsContent>
