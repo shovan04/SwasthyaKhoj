@@ -70,7 +70,7 @@ const Header = () => {
           }
         },
         (error: GeolocationPositionError) => {
-          console.error(`Geolocation error - Code: ${error.code}, Message: "${error.message}"`, error);
+          console.warn(`Geolocation API error (handled): Code ${error.code} - ${error.message}`, error);
           let friendlyError = "Could not get location. Please ensure location services are enabled and permissions are granted.";
           switch(error.code) {
             case error.PERMISSION_DENIED:
@@ -127,14 +127,14 @@ const Header = () => {
             ) : (
                 <MapPin className="h-5 w-5 text-primary shrink-0" />
             )}
-            <div className="overflow-hidden flex-grow min-w-0"> {/* Added flex-grow and min-w-0 */}
+            <div className="overflow-hidden flex-grow min-w-0">
               <p className="text-xs text-muted-foreground whitespace-nowrap">Your location</p>
               <p 
                 className={cn(
                   "font-semibold text-sm truncate",
                   (currentLocationDisplay === 'Set your location' || locationError) ? "text-muted-foreground" : "text-primary"
                 )}
-                style={{maxWidth: 'calc(100vw - 200px)'}} // Adjust if needed based on other elements
+                style={{maxWidth: 'calc(100vw - 200px)'}} 
               >
                 {currentLocationDisplay}
               </p>
@@ -142,10 +142,10 @@ const Header = () => {
           </div>
 
           {/* App title on the right */}
-          <Link href="/" className="flex items-center text-xl font-semibold text-primary hover:text-primary/90 transition-colors ml-auto shrink-0 text-right"> {/* Added ml-auto and shrink-0 */}
+          <Link href="/" className="flex items-center text-xl font-semibold text-primary hover:text-primary/90 transition-colors ml-auto shrink-0 text-right">
             <span className="hidden sm:inline">SwasthyaKhoj</span>
-            <span className="sm:hidden">SK</span> {/* Shorter name for mobile */}
-            <Hospital className="h-6 w-6 ml-2 shrink-0" /> {/* Icon moved to the right of text */}
+            <span className="sm:hidden">SK</span>
+            <Hospital className="h-6 w-6 ml-2 shrink-0" />
           </Link>
         </div>
       </header>
