@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 'use client';
 
@@ -18,6 +17,8 @@ const Header = () => {
 
 
   const handleDetectLocation = useCallback(async () => {
+    if (isDetecting) return; // Prevent re-entry
+    
     setIsDetecting(true);
     setLocationError(null);
     setCurrentLocationDisplay("Detecting GPS...");
@@ -30,18 +31,12 @@ const Header = () => {
 
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+            const timeoutId = setTimeout(() => controller.abort(), 10000); 
 
-            // Using a more privacy-friendly and less restrictive geocoding service if Nominatim has issues.
-            // Note: Ensure this alternative is compliant with usage policies.
-            // Example using OpenCage: (requires API key)
-            // const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=YOUR_OPENCAGE_API_KEY`, { signal: controller.signal });
-            
-            // Sticking with Nominatim for now as it's free and widely used, but being mindful of its usage policy.
             const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&accept-language=en`, {
               signal: controller.signal,
               headers: {
-                'User-Agent': 'SwasthyaKhojSimplified/1.0 (your-contact-email@example.com)' // Good practice to set a User-Agent
+                'User-Agent': 'SwasthyaKhojSimplified/1.0 (contact@swasthyakhoj.app)' 
               }
             });
             clearTimeout(timeoutId);
@@ -53,18 +48,21 @@ const Header = () => {
             
             let locationStr = "Unknown Location";
             if (data.address) {
-              // Prioritize more specific, commonly understood terms
-              locationStr = data.address.town || data.address.village || data.address.city_district || data.address.county || data.address.city || data.address.suburb ||  data.address.state || data.address.country || data.display_name.split(',')[0].trim();
+              locationStr = data.address.town || data.address.village || data.address.city_district || data.address.county || data.address.city || data.address.suburb || data.address.state || data.display_name.split(',')[0].trim();
+              if (locationStr === data.address.country && (data.address.town || data.address.village || data.address.city_district || data.address.suburb)) {
+                 // Prefer more specific if country is also the most specific one found initially
+                 locationStr = data.address.town || data.address.village || data.address.city_district || data.address.suburb;
+              }
             } else if (data.display_name) {
                 locationStr = data.display_name.split(',')[0].trim();
             }
             
-            // If still too generic, use coordinates as fallback
-            if (locationStr === "Unknown Location" || locationStr === data.address?.country ) {
+            if (locationStr === "Unknown Location" || locationStr === data.address?.country || !locationStr ) {
                 locationStr = `Lat: ${latitude.toFixed(2)}, Lon: ${longitude.toFixed(2)}`;
             }
             
             setCurrentLocationDisplay(locationStr);
+            localStorage.setItem('userLocation', locationStr); // Save to local storage
             toast({
               title: "Location Detected",
               description: `Your location updated to: ${locationStr}`,
@@ -91,7 +89,12 @@ const Header = () => {
           }
         },
         (error: GeolocationPositionError) => {
-          console.error(`Geolocation error - Code: ${error.code}, Message: "${error.message}"`, error);
+          if (error.code === error.POSITION_UNAVAILABLE) {
+            console.warn(`Geolocation position unavailable: Code ${error.code}, Message: "${error.message}"`, error);
+          } else {
+            console.error(`Geolocation error - Code: ${error.code}, Message: "${error.message}"`, error);
+          }
+          
           let friendlyError = "Could not get location. Please ensure location services are enabled and permissions are granted.";
           switch(error.code) {
             case error.PERMISSION_DENIED:
@@ -103,11 +106,11 @@ const Header = () => {
             case error.TIMEOUT:
               friendlyError = "The request to get user location timed out. Please try again.";
               break;
-            default: // Covers UNKNOWN_ERROR and any other codes
+            default: 
               friendlyError = "An unknown error occurred while trying to get your location. Please try again.";
           }
           setLocationError(friendlyError);
-          setCurrentLocationDisplay("Could not get GPS"); 
+          setCurrentLocationDisplay("Could not fetch GPS location"); 
           setIsDetecting(false);
           toast({
             title: "Location Error",
@@ -128,17 +131,18 @@ const Header = () => {
         variant: "destructive",
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast]); // Include toast in dependencies as it's used inside
+  }, [toast, isDetecting]); 
 
   useEffect(() => {
-    // Automatically detect location on initial load
-    // if no location is set or if there was a previous error.
-    if (currentLocationDisplay === 'Set your location' || locationError) {
+    const savedLocation = localStorage.getItem('userLocation');
+    if (savedLocation) {
+      setCurrentLocationDisplay(savedLocation);
+    } else if (currentLocationDisplay === 'Set your location' || (locationError && !isDetecting)) {
+       // Only attempt to detect if no saved location and (initial state or there was an error and not currently detecting)
       handleDetectLocation();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [handleDetectLocation]); // Run once on mount, and if handleDetectLocation changes (it's memoized)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handleDetectLocation]); // Rerun if handleDetectLocation changes (it's memoized)
 
 
   return (
@@ -146,14 +150,8 @@ const Header = () => {
       <header className="fixed top-0 left-0 right-0 z-50 bg-card shadow-md">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           
-        <Link href="/" className="flex items-center text-xl font-semibold text-primary hover:text-primary/90 transition-colors shrink-0">
-            <Hospital className="h-6 w-6 mr-2 shrink-0" />
-            <span className="hidden sm:inline">SwasthyaKhoj</span>
-            <span className="sm:hidden">SK</span>
-          </Link>
-
           <div
-            className="flex items-center space-x-2 cursor-pointer hover:bg-secondary/30 p-2 rounded-md transition-colors max-w-[calc(100vw-150px)] sm:max-w-[300px]"
+            className="flex items-center space-x-2 cursor-pointer hover:bg-secondary/30 p-2 rounded-md transition-colors max-w-[calc(100vw-150px)] sm:max-w-[calc(100vw-200px)] md:max-w-[300px] order-1"
             onClick={() => setIsLocationDialogOpen(true)}
             role="button"
             tabIndex={0}
@@ -170,14 +168,19 @@ const Header = () => {
               <p 
                 className={cn(
                   "font-semibold text-sm truncate",
-                  (currentLocationDisplay === 'Set your location' || locationError || currentLocationDisplay === "Could not get GPS" || currentLocationDisplay === "Geolocation not supported" || currentLocationDisplay.startsWith("Lat:") ) ? "text-destructive" : "text-primary"
+                  (currentLocationDisplay === 'Set your location' || locationError || currentLocationDisplay === "Could not fetch GPS location" || currentLocationDisplay === "Geolocation not supported" || currentLocationDisplay.startsWith("Lat:") ) ? "text-destructive" : "text-primary"
                 )}
+                title={currentLocationDisplay}
               >
                 {currentLocationDisplay}
               </p>
             </div>
           </div>
-
+          
+          <Link href="/" className="flex items-center text-xl font-semibold text-primary hover:text-primary/90 transition-colors shrink-0 order-2 sm:order-2 mx-auto sm:mx-0">
+            <Hospital className="h-6 w-6 mr-2 shrink-0" />
+            <span>SwasthyaKhoj</span>
+          </Link>
         </div>
       </header>
       <LocationDialog
@@ -193,4 +196,3 @@ const Header = () => {
 };
 
 export default Header;
-
