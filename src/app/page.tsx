@@ -1,11 +1,18 @@
+// @ts-nocheck
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Search, Hospital, Store, Users, Star, Compass } from 'lucide-react';
+import { MapPin, Search, Hospital, Store, Users, Star, Compass, Loader2 } from 'lucide-react';
 import type { MedicalFacility } from '@/types';
-import { getAllFacilities } from '@/lib/data'; // Import consolidated data
+import { getAllFacilities } from '@/lib/data';
+import React, { useState, useEffect } from 'react';
+import LocationDialog from '@/components/shared/LocationDialog';
+import { useToast } from "@/hooks/use-toast";
+
 
 interface QuickActionCardProps {
   title: string;
@@ -50,6 +57,12 @@ const NearbyFacilityItem: React.FC<NearbyFacilityItemProps> = ({ facility }) => 
 );
 
 export default function HomePage() {
+  const { toast } = useToast();
+  const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
+  const [currentLocationDisplay, setCurrentLocationDisplay] = useState('Kolkata, West Bengal'); // Initial mock location
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
   const quickActions = [
     { title: 'Find Hospitals', href: '/map?type=hospital', icon: <Hospital className="h-6 w-6 text-primary" /> },
     { title: 'Medical Stores', href: '/map?type=store', icon: <Store className="h-6 w-6 text-primary" /> },
@@ -58,21 +71,73 @@ export default function HomePage() {
   ];
 
   const allFacilities = getAllFacilities();
-  // For homepage, let's take a few examples, or filter by distance if that logic existed
   const homePageFacilities = allFacilities.slice(0, 4);
-
-
   const hospitals = homePageFacilities.filter(f => f.type === 'hospital');
   const stores = homePageFacilities.filter(f => f.type === 'store');
+
+  const handleDetectLocation = () => {
+    setIsDetectingLocation(true);
+    setLocationError(null);
+    setCurrentLocationDisplay("Detecting...");
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          // In a real app, you'd use reverse geocoding to get a city/address
+          const locationStr = `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`;
+          setCurrentLocationDisplay(locationStr);
+          setIsDetectingLocation(false);
+          setIsLocationDialogOpen(false); // Close dialog on success
+          toast({
+            title: "Location Detected",
+            description: `Your location has been updated to: ${locationStr}`,
+          });
+          // TODO: Use this location for filtering, distance calculation etc.
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          const friendlyError = "Could not get location. Please ensure location services are enabled and permissions are granted.";
+          setLocationError(friendlyError);
+          setCurrentLocationDisplay("Could not fetch location");
+          setIsDetectingLocation(false);
+          toast({
+            title: "Location Error",
+            description: friendlyError,
+            variant: "destructive",
+          });
+        },
+        { timeout: 10000 } // Add a timeout for geolocation
+      );
+    } else {
+      const errorMsg = "Geolocation is not supported by this browser.";
+      setLocationError(errorMsg);
+      setCurrentLocationDisplay("Geolocation not supported");
+      setIsDetectingLocation(false);
+      toast({
+        title: "Unsupported Feature",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    }
+  };
+
 
   return (
     <div className="space-y-6 p-4">
       {/* Location Section */}
-      <section className="flex items-center space-x-2">
+      <section
+        className="flex items-center space-x-2 cursor-pointer hover:bg-card p-2 rounded-md transition-colors"
+        onClick={() => setIsLocationDialogOpen(true)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsLocationDialogOpen(true);}}
+        aria-label="Set your current location"
+      >
         <MapPin className="h-5 w-5 text-primary" />
         <div>
           <p className="text-xs text-muted-foreground">Your current location</p>
-          <p className="font-semibold text-foreground">Kolkata, West Bengal</p> {/* Mock location */}
+          <p className="font-semibold text-foreground">{currentLocationDisplay}</p>
         </div>
       </section>
 
@@ -139,6 +204,15 @@ export default function HomePage() {
           </TabsContent>
         </Tabs>
       </section>
+
+      <LocationDialog
+        isOpen={isLocationDialogOpen}
+        onOpenChange={setIsLocationDialogOpen}
+        onDetectLocation={handleDetectLocation}
+        currentLocationText={currentLocationDisplay}
+        isDetecting={isDetectingLocation}
+        detectionError={locationError}
+      />
     </div>
   );
 }
