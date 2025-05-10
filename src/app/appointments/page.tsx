@@ -5,7 +5,7 @@ import { CalendarCheck, Search } from 'lucide-react';
 
 export default function AppointmentsPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-4 md:p-6"> {/* Added p-4 md:p-6 for padding on all sides */}
       <section>
         <h2 className="text-2xl font-semibold mb-4 text-primary">Book an Appointment</h2>
       </section>
