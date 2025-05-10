@@ -4,7 +4,7 @@
 
 import Link from 'next/link';
 import { Hospital, MapPin, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import LocationDialog from '@/components/shared/LocationDialog';
 import { useToast } from "@/hooks/use-toast";
 import { cn } from '@/lib/utils';
@@ -17,7 +17,7 @@ const Header = () => {
   const [locationError, setLocationError] = useState<string | null>(null);
 
 
-  const handleDetectLocation = async () => {
+  const handleDetectLocation = useCallback(async () => {
     setIsDetecting(true);
     setLocationError(null);
     setCurrentLocationDisplay("Detecting GPS...");
@@ -32,8 +32,17 @@ const Header = () => {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
 
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`, {
-              signal: controller.signal
+            // Using a more privacy-friendly and less restrictive geocoding service if Nominatim has issues.
+            // Note: Ensure this alternative is compliant with usage policies.
+            // Example using OpenCage: (requires API key)
+            // const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=YOUR_OPENCAGE_API_KEY`, { signal: controller.signal });
+            
+            // Sticking with Nominatim for now as it's free and widely used, but being mindful of its usage policy.
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&accept-language=en`, {
+              signal: controller.signal,
+              headers: {
+                'User-Agent': 'SwasthyaKhojSimplified/1.0 (your-contact-email@example.com)' // Good practice to set a User-Agent
+              }
             });
             clearTimeout(timeoutId);
 
@@ -44,9 +53,14 @@ const Header = () => {
             
             let locationStr = "Unknown Location";
             if (data.address) {
-              // Prefer town, then village, then city, etc.
-              locationStr = data.address.town || data.address.village || data.address.city || data.address.hamlet || data.address.suburb || data.address.county || data.display_name.split(',')[0].trim() || `Lat: ${latitude.toFixed(2)}, Lon: ${longitude.toFixed(2)}`;
-            } else {
+              // Prioritize more specific, commonly understood terms
+              locationStr = data.address.town || data.address.village || data.address.city_district || data.address.county || data.address.city || data.address.suburb ||  data.address.state || data.address.country || data.display_name.split(',')[0].trim();
+            } else if (data.display_name) {
+                locationStr = data.display_name.split(',')[0].trim();
+            }
+            
+            // If still too generic, use coordinates as fallback
+            if (locationStr === "Unknown Location" || locationStr === data.address?.country ) {
                 locationStr = `Lat: ${latitude.toFixed(2)}, Lon: ${longitude.toFixed(2)}`;
             }
             
@@ -101,7 +115,7 @@ const Header = () => {
             variant: "destructive",
           });
         },
-        { timeout: 15000, enableHighAccuracy: false, maximumAge: 0 } 
+        { timeout: 20000, enableHighAccuracy: false, maximumAge: 60000 } 
       );
     } else {
       const errorMsg = "Geolocation is not supported by this browser.";
@@ -114,14 +128,31 @@ const Header = () => {
         variant: "destructive",
       });
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast]); // Include toast in dependencies as it's used inside
+
+  useEffect(() => {
+    // Automatically detect location on initial load
+    // if no location is set or if there was a previous error.
+    if (currentLocationDisplay === 'Set your location' || locationError) {
+      handleDetectLocation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handleDetectLocation]); // Run once on mount, and if handleDetectLocation changes (it's memoized)
+
 
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-card shadow-md">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           
-        <div
+        <Link href="/" className="flex items-center text-xl font-semibold text-primary hover:text-primary/90 transition-colors shrink-0">
+            <Hospital className="h-6 w-6 mr-2 shrink-0" />
+            <span className="hidden sm:inline">SwasthyaKhoj</span>
+            <span className="sm:hidden">SK</span>
+          </Link>
+
+          <div
             className="flex items-center space-x-2 cursor-pointer hover:bg-secondary/30 p-2 rounded-md transition-colors max-w-[calc(100vw-150px)] sm:max-w-[300px]"
             onClick={() => setIsLocationDialogOpen(true)}
             role="button"
@@ -146,12 +177,6 @@ const Header = () => {
               </p>
             </div>
           </div>
-
-          <Link href="/" className="flex items-center text-xl font-semibold text-primary hover:text-primary/90 transition-colors shrink-0">
-            <Hospital className="h-6 w-6 mr-2 shrink-0" />
-            <span className="hidden sm:inline">SwasthyaKhoj</span>
-            <span className="sm:hidden">SK</span>
-          </Link>
 
         </div>
       </header>
