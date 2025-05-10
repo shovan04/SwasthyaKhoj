@@ -16,7 +16,7 @@ const userProfile = {
 
 export default function ProfilePage() {
   return (
-    <div className="space-y-8 p-4 md:p-6"> {/* Added p-4 md:p-6 for padding */}
+    <div className="space-y-8 py-4 md:py-6"> {/* Adjusted padding */}
       <section>
         <h2 className="text-2xl font-semibold mb-4 text-primary">My Profile</h2>
       </section>
@@ -65,4 +65,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-

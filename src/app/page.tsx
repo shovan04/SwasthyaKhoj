@@ -91,7 +91,7 @@ export default function HomePage() {
   ];
   
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-6 py-4"> {/* Adjusted padding */}
       {/* Location Section Removed - Now in Header */}
       
       {/* Search Bar Section */}

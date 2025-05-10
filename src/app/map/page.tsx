@@ -6,7 +6,7 @@ export default function MapPage() {
   const facilities: MedicalFacility[] = getAllFacilities();
 
   return (
-    <div className="space-y-8 p-4 md:p-6"> {/* Changed p-4 to p-4 md:p-6 for consistent padding */}
+    <div className="space-y-8 py-4 md:py-6"> {/* Adjusted padding */}
       <section>
         <h2 className="text-2xl font-semibold mb-4 text-primary">Nearby Medical Facilities</h2>
         <div className="bg-muted rounded-lg p-6 h-64 flex items-center justify-center text-muted-foreground shadow-inner">

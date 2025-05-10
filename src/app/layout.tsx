@@ -30,7 +30,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <div className="flex flex-col min-h-screen bg-background">
           <Header />
-          <main className="flex-grow pt-16 pb-16"> {/* Adjusted bottom padding */}
+          <main className="flex-grow pt-16 pb-16 px-4"> {/* Adjusted padding */}
             {children}
           </main>
           <BottomNav />

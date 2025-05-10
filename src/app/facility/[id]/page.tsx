@@ -22,7 +22,7 @@ export default async function FacilityDetailPage({ params }: { params: { id: str
 
   if (!facility) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
+      <div className="flex flex-col items-center justify-center min-h-screen py-4 text-center"> {/* Adjusted padding */}
         <h1 className="text-2xl font-bold text-destructive mb-4">Facility Not Found</h1>
         <p className="text-muted-foreground mb-6">The facility you are looking for does not exist or may have been removed.</p>
         <Button asChild>
@@ -38,7 +38,7 @@ export default async function FacilityDetailPage({ params }: { params: { id: str
   const FacilityTypeIcon = facility.type === 'hospital' ? HospitalIcon : StoreIcon;
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="py-4 md:py-6 space-y-6"> {/* Adjusted padding */}
       <div className="flex justify-between items-center">
         <Button variant="outline" size="sm" asChild>
           <Link href="/map">
@@ -55,8 +55,8 @@ export default async function FacilityDetailPage({ params }: { params: { id: str
             <Image
               src={facility.imageUrl}
               alt={facility.name}
-              layout="fill"
-              objectFit="cover"
+              fill // layout="fill" is deprecated, use fill
+              style={{ objectFit: 'cover' }} // objectFit needs to be a style prop with fill
               priority // Prioritize loading image for LCP
               data-ai-hint={facility.type === 'hospital' ? "hospital building exterior" : "store pharmacy interior"}
             />

@@ -56,7 +56,7 @@ export default function ProviderSummaryPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 py-4"> {/* Added py-4 for vertical spacing consistent with other pages */}
       <section>
         <h2 className="text-2xl font-semibold mb-1 text-primary">AI Provider Summary</h2>
         <p className="text-muted-foreground">

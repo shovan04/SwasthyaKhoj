@@ -17,7 +17,7 @@ const BottomNav = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-t-md z-50">
-      <div className="container mx-auto flex justify-around items-center h-16 max-w-md"> {/* Constrain width for better mobile look */}
+      <div className="container mx-auto flex justify-around items-center h-16 max-w-md px-4"> {/* Added px-4 */}
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href === "/map" && pathname.startsWith("/map")); // Highlight Explore for /map too
           return (
