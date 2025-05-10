@@ -59,7 +59,7 @@ const NearbyFacilityItem: React.FC<NearbyFacilityItemProps> = ({ facility }) => 
 export default function HomePage() {
   const { toast } = useToast();
   const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
-  const [currentLocationDisplay, setCurrentLocationDisplay] = useState('Kolkata, West Bengal'); // Initial mock location
+  const [currentLocationDisplay, setCurrentLocationDisplay] = useState('Set your location'); // Initial mock location
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -75,31 +75,51 @@ export default function HomePage() {
   const hospitals = homePageFacilities.filter(f => f.type === 'hospital');
   const stores = homePageFacilities.filter(f => f.type === 'store');
 
-  const handleDetectLocation = () => {
+  const handleDetectLocation = async () => {
     setIsDetectingLocation(true);
     setLocationError(null);
-    setCurrentLocationDisplay("Detecting...");
+    setCurrentLocationDisplay("Detecting GPS...");
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const { latitude, longitude } = position.coords;
-          // In a real app, you'd use reverse geocoding to get a city/address
-          const locationStr = `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`;
-          setCurrentLocationDisplay(locationStr);
-          setIsDetectingLocation(false);
-          setIsLocationDialogOpen(false); // Close dialog on success
-          toast({
-            title: "Location Detected",
-            description: `Your location has been updated to: ${locationStr}`,
-          });
-          // TODO: Use this location for filtering, distance calculation etc.
+          setCurrentLocationDisplay("Fetching address...");
+
+          try {
+            // Reverse geocoding using OpenStreetMap Nominatim API
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+            if (!response.ok) {
+              throw new Error(`Nominatim API error: ${response.status}`);
+            }
+            const data = await response.json();
+            
+            const locationStr = data.display_name || `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`;
+            setCurrentLocationDisplay(locationStr);
+            toast({
+              title: "Location Detected",
+              description: `Your location has been updated to: ${locationStr}`,
+            });
+          } catch (apiError) {
+            console.error("Error fetching address:", apiError);
+            const fallbackLocationStr = `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`;
+            setCurrentLocationDisplay(fallbackLocationStr);
+            setLocationError("Could not fetch address. Showing coordinates.");
+            toast({
+              title: "Address Fetch Error",
+              description: `Could not get address details. Using coordinates: ${fallbackLocationStr}`,
+              variant: "destructive",
+            });
+          } finally {
+            setIsDetectingLocation(false);
+            setIsLocationDialogOpen(false); // Close dialog on success or address fetch error
+          }
         },
         (error) => {
           console.error("Error getting location:", error);
           const friendlyError = "Could not get location. Please ensure location services are enabled and permissions are granted.";
           setLocationError(friendlyError);
-          setCurrentLocationDisplay("Could not fetch location");
+          setCurrentLocationDisplay("Could not fetch GPS location");
           setIsDetectingLocation(false);
           toast({
             title: "Location Error",
