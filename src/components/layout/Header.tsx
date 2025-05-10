@@ -49,7 +49,7 @@ const Header = () => {
               description: `Your location has been updated to: ${locationStr.substring(0, 100)}${locationStr.length > 100 ? '...' : ''}`,
             });
           } catch (apiError: any) {
-            console.error("Error fetching address:", apiError.name === 'AbortError' ? 'Nominatim API request timed out' : apiError);
+            console.warn("Error fetching address:", apiError.name === 'AbortError' ? 'Nominatim API request timed out' : apiError); // Changed to warn
             const fallbackLocationStr = `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`;
             setCurrentLocationDisplay(fallbackLocationStr);
             
@@ -70,6 +70,7 @@ const Header = () => {
           }
         },
         (error: GeolocationPositionError) => {
+          // Changed from console.error to console.warn as it's a handled error condition
           console.warn(`Geolocation API error (handled): Code ${error.code} - ${error.message}`, error);
           let friendlyError = "Could not get location. Please ensure location services are enabled and permissions are granted.";
           switch(error.code) {
@@ -86,7 +87,8 @@ const Header = () => {
               friendlyError = "An unknown error occurred while trying to get your location.";
           }
           setLocationError(friendlyError);
-          setCurrentLocationDisplay("Could not fetch GPS location");
+          // Update display to show the specific friendly error
+          setCurrentLocationDisplay(friendlyError); 
           setIsDetectingLocation(false);
           toast({
             title: "Location Error",
@@ -99,7 +101,7 @@ const Header = () => {
     } else {
       const errorMsg = "Geolocation is not supported by this browser.";
       setLocationError(errorMsg);
-      setCurrentLocationDisplay("Geolocation not supported");
+      setCurrentLocationDisplay("Geolocation not supported"); // Or errorMsg
       setIsDetectingLocation(false);
       toast({
         title: "Unsupported Feature",
@@ -132,7 +134,7 @@ const Header = () => {
               <p 
                 className={cn(
                   "font-semibold text-sm truncate",
-                  (currentLocationDisplay === 'Set your location' || locationError) ? "text-muted-foreground" : "text-primary"
+                  (currentLocationDisplay === 'Set your location' || locationError || currentLocationDisplay === "Location information is unavailable." || currentLocationDisplay === "Geolocation not supported" || currentLocationDisplay === "Location permission denied. Please enable it in your browser settings." || currentLocationDisplay === "The request to get user location timed out.") ? "text-destructive" : "text-primary"
                 )}
                 style={{maxWidth: 'calc(100vw - 200px)'}} 
               >
@@ -162,3 +164,4 @@ const Header = () => {
 };
 
 export default Header;
+
