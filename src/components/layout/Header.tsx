@@ -15,9 +15,6 @@ const Header = () => {
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  // Effect to try and get location on initial load if permission was previously granted
-  // This is a common pattern, but for now, we stick to manual trigger via dialog.
-  // You might want to add a check for persisted location preference here in a real app.
 
   const handleDetectLocation = async () => {
     setIsDetectingLocation(true);
@@ -31,9 +28,17 @@ const Header = () => {
           setCurrentLocationDisplay("Fetching address...");
 
           try {
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+            // Using a timeout for the fetch request
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`, {
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
             if (!response.ok) {
-              throw new Error(`Nominatim API error: ${response.status}`);
+              throw new Error(`Nominatim API error: ${response.status} ${response.statusText}`);
             }
             const data = await response.json();
             
@@ -41,16 +46,22 @@ const Header = () => {
             setCurrentLocationDisplay(locationStr);
             toast({
               title: "Location Detected",
-              description: `Your location has been updated to: ${locationStr}`,
+              description: `Your location has been updated to: ${locationStr.substring(0, 100)}${locationStr.length > 100 ? '...' : ''}`,
             });
-          } catch (apiError) {
-            console.error("Error fetching address:", apiError);
+          } catch (apiError: any) {
+            console.error("Error fetching address:", apiError.name === 'AbortError' ? 'Nominatim API request timed out' : apiError);
             const fallbackLocationStr = `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`;
             setCurrentLocationDisplay(fallbackLocationStr);
-            setLocationError("Could not fetch address. Showing coordinates.");
+            
+            let userFriendlyApiError = "Could not fetch address details.";
+            if (apiError.name === 'AbortError') {
+              userFriendlyApiError = "Could not fetch address details: The request timed out.";
+            }
+            
+            setLocationError(userFriendlyApiError + " Showing coordinates.");
             toast({
               title: "Address Fetch Error",
-              description: `Could not get address details. Using coordinates: ${fallbackLocationStr}`,
+              description: `${userFriendlyApiError} Using coordinates: ${fallbackLocationStr}`,
               variant: "destructive",
             });
           } finally {
@@ -59,8 +70,21 @@ const Header = () => {
           }
         },
         (error) => {
-          console.error("Error getting location:", error);
-          const friendlyError = "Could not get location. Please ensure location services are enabled and permissions are granted.";
+          console.error("Error getting location:", { code: error.code, message: error.message, errorObj: error });
+          let friendlyError = "Could not get location. Please ensure location services are enabled and permissions are granted.";
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              friendlyError = "Location permission denied. Please enable it in your browser settings.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              friendlyError = "Location information is unavailable.";
+              break;
+            case error.TIMEOUT:
+              friendlyError = "The request to get user location timed out.";
+              break;
+            default:
+              friendlyError = "An unknown error occurred while trying to get your location.";
+          }
           setLocationError(friendlyError);
           setCurrentLocationDisplay("Could not fetch GPS location");
           setIsDetectingLocation(false);
@@ -70,7 +94,7 @@ const Header = () => {
             variant: "destructive",
           });
         },
-        { timeout: 10000 } 
+        { timeout: 10000, enableHighAccuracy: true } 
       );
     } else {
       const errorMsg = "Geolocation is not supported by this browser.";
@@ -98,14 +122,19 @@ const Header = () => {
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsLocationDialogOpen(true);}}
             aria-label="Set your current location"
           >
-            <MapPin className="h-5 w-5 text-primary shrink-0" />
-            <div className="overflow-hidden">
-              <p className="text-xs text-muted-foreground">Your location</p>
-              <p className={cn(
-                "font-semibold text-foreground text-sm truncate",
-                currentLocationDisplay === 'Set your location' || locationError ? "text-muted-foreground" : "text-primary"
+            {isDetectingLocation ? (
+                <Loader2 className="h-5 w-5 text-primary animate-spin shrink-0" />
+            ) : (
+                <MapPin className="h-5 w-5 text-primary shrink-0" />
+            )}
+            <div className="overflow-hidden flex-grow min-w-0"> {/* Added flex-grow and min-w-0 */}
+              <p className="text-xs text-muted-foreground whitespace-nowrap">Your location</p>
+              <p 
+                className={cn(
+                  "font-semibold text-sm truncate",
+                  currentLocationDisplay === 'Set your location' || locationError ? "text-muted-foreground" : "text-primary"
                 )}
-                style={{maxWidth: 'calc(100vw - 250px)'}} // Dynamic max width
+                style={{maxWidth: 'calc(100vw - 200px)'}} // Adjust if needed based on other elements
               >
                 {currentLocationDisplay}
               </p>
@@ -113,7 +142,7 @@ const Header = () => {
           </div>
 
           {/* App title on the right */}
-          <Link href="/" className="flex items-center text-xl font-semibold text-primary hover:text-primary/90 transition-colors">
+          <Link href="/" className="flex items-center text-xl font-semibold text-primary hover:text-primary/90 transition-colors ml-auto shrink-0"> {/* Added ml-auto and shrink-0 */}
             <Hospital className="h-6 w-6 mr-2 shrink-0" />
             <span className="hidden sm:inline">SwasthyaKhoj</span>
             <span className="sm:hidden">SK</span> {/* Shorter name for mobile */}
