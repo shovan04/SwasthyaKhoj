@@ -13,12 +13,12 @@ const Header = () => {
   const { toast } = useToast();
   const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
   const [currentLocationDisplay, setCurrentLocationDisplay] = useState('Set your location');
-  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
 
   const handleDetectLocation = async () => {
-    setIsDetectingLocation(true);
+    setIsDetecting(true);
     setLocationError(null);
     setCurrentLocationDisplay("Detecting GPS...");
 
@@ -29,7 +29,6 @@ const Header = () => {
           setCurrentLocationDisplay("Fetching address...");
 
           try {
-            // Using a timeout for the fetch request
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
 
@@ -43,15 +42,21 @@ const Header = () => {
             }
             const data = await response.json();
             
-            const locationStr = data.display_name || `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`;
+            let locationStr = "Unknown Location";
+            if (data.address) {
+              locationStr = data.address.city || data.address.town || data.address.village || data.address.hamlet || data.address.suburb || data.address.county || data.display_name.split(',')[0] || `Lat: ${latitude.toFixed(2)}, Lon: ${longitude.toFixed(2)}`;
+            } else {
+                locationStr = `Lat: ${latitude.toFixed(2)}, Lon: ${longitude.toFixed(2)}`;
+            }
+            
             setCurrentLocationDisplay(locationStr);
             toast({
               title: "Location Detected",
-              description: `Your location has been updated to: ${locationStr.substring(0, 100)}${locationStr.length > 100 ? '...' : ''}`,
+              description: `Your location updated to: ${locationStr}`,
             });
           } catch (apiError: any) {
             console.warn("Error fetching address:", apiError.name === 'AbortError' ? 'Nominatim API request timed out' : apiError.message, apiError);
-            const fallbackLocationStr = `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`;
+            const fallbackLocationStr = `Lat: ${latitude.toFixed(2)}, Lon: ${longitude.toFixed(2)}`;
             setCurrentLocationDisplay(fallbackLocationStr);
             
             let userFriendlyApiError = "Could not fetch address details.";
@@ -66,12 +71,12 @@ const Header = () => {
               variant: "destructive",
             });
           } finally {
-            setIsDetectingLocation(false);
+            setIsDetecting(false);
             setIsLocationDialogOpen(false); 
           }
         },
         (error: GeolocationPositionError) => {
-          console.warn(`Geolocation API error (handled): Code ${error.code} - ${error.message}`, error);
+          console.error(`Geolocation error - Code: ${error.code}, Message: "${error.message}"`, error);
           let friendlyError = "Could not get location. Please ensure location services are enabled and permissions are granted.";
           switch(error.code) {
             case error.PERMISSION_DENIED:
@@ -83,25 +88,25 @@ const Header = () => {
             case error.TIMEOUT:
               friendlyError = "The request to get user location timed out. Please try again.";
               break;
-            default:
+            default: // Covers UNKNOWN_ERROR and any other codes
               friendlyError = "An unknown error occurred while trying to get your location. Please try again.";
           }
           setLocationError(friendlyError);
-          setCurrentLocationDisplay(friendlyError); 
-          setIsDetectingLocation(false);
+          setCurrentLocationDisplay("Could not get GPS"); 
+          setIsDetecting(false);
           toast({
             title: "Location Error",
             description: friendlyError,
             variant: "destructive",
           });
         },
-        { timeout: 10000, enableHighAccuracy: true } 
+        { timeout: 15000, enableHighAccuracy: false, maximumAge: 60000 } 
       );
     } else {
       const errorMsg = "Geolocation is not supported by this browser.";
       setLocationError(errorMsg);
       setCurrentLocationDisplay("Geolocation not supported");
-      setIsDetectingLocation(false);
+      setIsDetecting(false);
       toast({
         title: "Unsupported Feature",
         description: errorMsg,
@@ -115,14 +120,14 @@ const Header = () => {
       <header className="fixed top-0 left-0 right-0 z-50 bg-card shadow-md">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           <div
-            className="flex items-center space-x-2 cursor-pointer hover:bg-secondary/30 p-2 rounded-md transition-colors"
+            className="flex items-center space-x-2 cursor-pointer hover:bg-secondary/30 p-2 rounded-md transition-colors max-w-[calc(100vw-150px)] sm:max-w-[300px]" // Constrain width
             onClick={() => setIsLocationDialogOpen(true)}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsLocationDialogOpen(true);}}
             aria-label="Set your current location"
           >
-            {isDetectingLocation ? (
+            {isDetecting ? (
                 <Loader2 className="h-5 w-5 text-primary animate-spin shrink-0" />
             ) : (
                 <MapPin className="h-5 w-5 text-primary shrink-0" />
@@ -132,9 +137,8 @@ const Header = () => {
               <p 
                 className={cn(
                   "font-semibold text-sm truncate",
-                  (currentLocationDisplay === 'Set your location' || locationError || currentLocationDisplay === "Location information is unavailable. Please check your device's location services, network/GPS signal, and try again." || currentLocationDisplay === "Geolocation not supported" || currentLocationDisplay === "Location permission denied. Please enable it in your browser settings." || currentLocationDisplay === "The request to get user location timed out. Please try again." || currentLocationDisplay === "An unknown error occurred while trying to get your location. Please try again.") ? "text-destructive" : "text-primary"
+                  (currentLocationDisplay === 'Set your location' || locationError || currentLocationDisplay === "Could not get GPS" || currentLocationDisplay === "Geolocation not supported" || currentLocationDisplay.startsWith("Lat:") ) ? "text-destructive" : "text-primary"
                 )}
-                style={{maxWidth: 'calc(100vw - 200px)'}} 
               >
                 {currentLocationDisplay}
               </p>
@@ -153,7 +157,7 @@ const Header = () => {
         onOpenChange={setIsLocationDialogOpen}
         onDetectLocation={handleDetectLocation}
         currentLocationText={currentLocationDisplay}
-        isDetecting={isDetectingLocation}
+        isDetecting={isDetecting}
         detectionError={locationError}
       />
     </>
@@ -161,3 +165,4 @@ const Header = () => {
 };
 
 export default Header;
+
