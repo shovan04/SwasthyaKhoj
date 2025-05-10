@@ -1,5 +1,11 @@
 import InfoCard from '@/components/shared/InfoCard';
-import type { MedicalFacility } from '@/types';
+import type { MedicalFacility, Doctor } from '@/types';
+
+const mockDoctors: Doctor[] = [
+  { id: 'doc1', name: 'Dr. Priya Sharma', specialty: 'General Physician', timings: 'Mon-Fri: 9 AM - 1 PM, 3 PM - 6 PM' },
+  { id: 'doc2', name: 'Dr. Rahul Verma', specialty: 'Pediatrician', timings: 'Tue, Thu, Sat: 10 AM - 4 PM' },
+  { id: 'doc3', name: 'Dr. Anjali Singh', specialty: 'Gynecologist', timings: 'Mon, Wed, Fri: 11 AM - 5 PM' },
+];
 
 const mockFacilities: MedicalFacility[] = [
   {
@@ -9,9 +15,11 @@ const mockFacilities: MedicalFacility[] = [
     address: '123 Village Road, Rural District, State',
     phone: '+91-123-4567890',
     imageUrl: 'https://picsum.photos/400/200?random=1',
-    latitude: 28.6139, // Example coordinates
+    latitude: 28.6139, 
     longitude: 77.2090,
-    services: ['General Checkup', 'Emergency Care', 'Maternity Ward'],
+    services: ['General Checkup', 'Emergency Care', 'Maternity Ward', 'Minor Procedures'],
+    doctors: [mockDoctors[0], mockDoctors[1]],
+    appointmentBookingInfo: 'Call +91-123-4567890 during working hours. Walk-ins accepted for emergencies.',
   },
   {
     id: '2',
@@ -22,7 +30,7 @@ const mockFacilities: MedicalFacility[] = [
     imageUrl: 'https://picsum.photos/400/200?random=2',
     latitude: 28.6150,
     longitude: 77.2100,
-    operatingHours: '9 AM - 8 PM',
+    operatingHours: '9 AM - 8 PM Daily',
   },
   {
     id: '3',
@@ -33,7 +41,9 @@ const mockFacilities: MedicalFacility[] = [
     imageUrl: 'https://picsum.photos/400/200?random=3',
     latitude: 28.6100,
     longitude: 77.2000,
-    services: ['Surgery', 'Pediatrics', 'OPD'],
+    services: ['Surgery', 'Pediatrics', 'OPD', 'Cardiology', 'Ortho'],
+    doctors: [mockDoctors[0], mockDoctors[1], mockDoctors[2]],
+    appointmentBookingInfo: 'Appointments preferred. Call +91-111-2223330 or visit our reception. Online booking coming soon.',
   },
   {
     id: '4',
