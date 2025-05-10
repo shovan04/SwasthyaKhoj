@@ -101,7 +101,7 @@ const Header = () => {
             variant: "destructive",
           });
         },
-        { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 } 
+        { timeout: 15000, enableHighAccuracy: false, maximumAge: 0 } 
       );
     } else {
       const errorMsg = "Geolocation is not supported by this browser.";
@@ -120,13 +120,8 @@ const Header = () => {
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-card shadow-md">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
-          <Link href="/" className="flex items-center text-xl font-semibold text-primary hover:text-primary/90 transition-colors shrink-0">
-            <Hospital className="h-6 w-6 mr-2 shrink-0" />
-            <span className="hidden sm:inline">SwasthyaKhoj</span>
-            <span className="sm:hidden">SK</span>
-          </Link>
-
-          <div
+          
+        <div
             className="flex items-center space-x-2 cursor-pointer hover:bg-secondary/30 p-2 rounded-md transition-colors max-w-[calc(100vw-150px)] sm:max-w-[300px]"
             onClick={() => setIsLocationDialogOpen(true)}
             role="button"
@@ -151,6 +146,13 @@ const Header = () => {
               </p>
             </div>
           </div>
+
+          <Link href="/" className="flex items-center text-xl font-semibold text-primary hover:text-primary/90 transition-colors shrink-0">
+            <Hospital className="h-6 w-6 mr-2 shrink-0" />
+            <span className="hidden sm:inline">SwasthyaKhoj</span>
+            <span className="sm:hidden">SK</span>
+          </Link>
+
         </div>
       </header>
       <LocationDialog
@@ -166,3 +168,4 @@ const Header = () => {
 };
 
 export default Header;
+
