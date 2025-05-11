@@ -25,6 +25,7 @@
 *.pem
 .vscode/
 .idx/
+.modified
 
 # debug
 npm-debug.log*
